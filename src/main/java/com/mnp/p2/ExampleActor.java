@@ -1,4 +1,4 @@
-package com.example;
+package com.mnp.p2;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;

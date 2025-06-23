@@ -1,4 +1,10 @@
-package com.example;
+/**
+ * Isabelle Bille 156252
+ * Justin Gottwald 201237
+ * Ilia Orlov 251287
+ */
+
+package com.mnp.p2;
 
 import akka.actor.typed.ActorSystem;
 
