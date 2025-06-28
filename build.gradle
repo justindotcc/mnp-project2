@@ -1,24 +1,25 @@
-apply plugin: 'java'
-apply plugin: 'idea'
-apply plugin: 'application'
-
+plugins {
+    id 'java'
+    id 'idea'
+    id 'application'
+}
 
 repositories {
     mavenCentral()
     mavenLocal()
-    maven {
-        url "https://repo.akka.io/maven"
-    }
+    maven { url = uri("https://repo.akka.io/maven") }
 }
 
 dependencies {
   implementation 'com.typesafe.akka:akka-actor-typed_2.13:2.9.2'
-  implementation 'ch.qos.logback:logback-classic:1.2.3'
+  implementation 'ch.qos.logback:logback-classic:1.5.13'
   testImplementation 'com.typesafe.akka:akka-actor-testkit-typed_2.13:2.9.2'
   testImplementation 'junit:junit:4.13.1'
 }
 
-mainClassName = "com.mnp.p2.AkkaStart"
+application {
+    mainClass = 'com.mnp.projekt2.Main'
+}
 
 run {
   standardInput = System.in

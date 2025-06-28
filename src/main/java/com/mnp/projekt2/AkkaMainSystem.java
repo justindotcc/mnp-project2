@@ -1,4 +1,4 @@
-package com.mnp.p2;
+package com.mnp.projekt2;
 
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.*;
