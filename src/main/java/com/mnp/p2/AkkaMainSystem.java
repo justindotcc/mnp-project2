@@ -1,12 +1,5 @@
-/**
- * Isabelle Bille 156252
- * Justin Gottwald 201237
- * Ilia Orlov 251287
- */
-
 package com.mnp.p2;
 
-import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.*;
 
@@ -29,12 +22,12 @@ public class AkkaMainSystem extends AbstractBehavior<AkkaMainSystem.Create> {
     }
 
     private Behavior<Create> onCreate(Create command) {
-        //#create-actors
-        ActorRef<ExampleActor.Message> a = this.getContext().spawn(ExampleActor.create("Alice"), "alice");
-        ActorRef<ExampleTimerActor.Message> b = this.getContext().spawn(ExampleTimerActor.create(), "timeractor");
-        //#create-actors
+        var addition = this.getContext().spawn(Add.create(), "Addition");
+        addition.tell(new Add.EvalAndWait("3", "5"));
 
-        a.tell(new ExampleActor.ExampleMessage(this.getContext().getSelf(),"Test123"));
+        var addition_check = this.getContext().spawn(Add.create(), "AdditionCheck");
+        addition_check.tell(new Add.EvalAndCheck("4", "6"));
+
         return this;
     }
 }

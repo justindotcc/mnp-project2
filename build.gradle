@@ -12,15 +12,10 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.typesafe.akka:akka-actor-typed_2.13:2.10.0'
-
-    implementation 'ch.qos.logback:logback-classic:1.2.13'
-
-    testImplementation 'com.typesafe.akka:akka-actor-testkit-typed_2.13:2.10.0'
-    testImplementation 'junit:junit:4.13.1'
-
-    implementation 'org.slf4j:slf4j-api:2.0.9'
-    runtimeOnly 'ch.qos.logback:logback-classic:1.4.11'
+  implementation 'com.typesafe.akka:akka-actor-typed_2.13:2.9.2'
+  implementation 'ch.qos.logback:logback-classic:1.2.3'
+  testImplementation 'com.typesafe.akka:akka-actor-testkit-typed_2.13:2.9.2'
+  testImplementation 'junit:junit:4.13.1'
 }
 
 mainClassName = "com.mnp.p2.AkkaStart"
