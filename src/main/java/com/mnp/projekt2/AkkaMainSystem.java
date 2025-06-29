@@ -1,55 +1,36 @@
 package com.mnp.projekt2;
 
+import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.AbstractBehavior;
-import akka.actor.typed.javadsl.ActorContext;
-import akka.actor.typed.javadsl.Behaviors;
-import akka.actor.typed.javadsl.Receive;
+import akka.actor.typed.javadsl.*;
 
+public class AkkaMainSystem extends AbstractBehavior<ComponentBuilder.Done> {
+    private final ActorRef<BuilderActor.Command> controller;
 
-/**
- * Akka-Hauptsystem, das die Produktion von elektronischen Bauteilen steuert.
- * Startet die Produktion mit dem Bauteil EB5 als Wurzel.
- */
-public class AkkaMainSystem extends AbstractBehavior<AkkaMainSystem.Message> {
-
-    /**
-     * Nachrichten für den AkkaMainSystem-Actor.
-     */
-    public interface Message { }
-
-    /**
-     * Nachricht zum Beenden des Systems.
-     */
-    public static class Terminate implements Message {
-    }
-
-    /**
-     * Erzeugt die Behavior-Instanz von AkkaMainSystem.
-     */
-    public static Behavior<Message> create() {
+    public static Behavior<ComponentBuilder.Done> create() {
         return Behaviors.setup(AkkaMainSystem::new);
     }
 
-    private AkkaMainSystem(ActorContext<Message> context) {
-        super(context);
-        // Produktionsstart für EB5
-        getContext().getLog().info("Starte Produktion des Bauteils EB5.");
-        // Starte den Builder-Actor für EB5
-        context.spawnAnonymous(BuilderActor.create(ComponentType.EB5));
+    private AkkaMainSystem(ActorContext<ComponentBuilder.Done> ctx) {
+        super(ctx);
+        controller = ctx.spawnAnonymous(BuilderActor.create());
+        startProduction();
+    }
+
+    private void startProduction() {
+        controller.tell(new BuilderActor.BuildComponent("EB4", getContext().getSelf()));
+        controller.tell(new BuilderActor.BuildComponent("EB5", getContext().getSelf()));
     }
 
     @Override
-    public Receive<Message> createReceive() {
+    public Receive<ComponentBuilder.Done> createReceive() {
         return newReceiveBuilder()
-                .onMessage(Terminate.class, this::onTerminate)
+                .onMessage(ComponentBuilder.Done.class, this::onDone)
                 .build();
     }
 
-    private Behavior<Message> onTerminate(Terminate msg) {
-        getContext().getLog().info("System wird beendet.");
-        // System herunterfahren
-        getContext().getSystem().terminate();
-        return Behaviors.stopped();
+    private Behavior<ComponentBuilder.Done> onDone(ComponentBuilder.Done msg) {
+        getContext().getLog().info("MainSystem: production of {} completed", msg.name());
+        return this;
     }
 }

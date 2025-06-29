@@ -1,80 +1,62 @@
 package com.mnp.projekt2;
 
 import akka.actor.typed.Behavior;
-import akka.actor.typed.Terminated;
-import akka.actor.typed.javadsl.AbstractBehavior;
-import akka.actor.typed.javadsl.ActorContext;
+import akka.actor.typed.javadsl.*;
 import akka.actor.typed.ActorRef;
-import akka.actor.typed.javadsl.Behaviors;
-import akka.actor.typed.javadsl.Receive;
 
+import java.util.HashMap;
+import java.util.Map;
 
-/**
- * Actor, der ein Bauteil produziert. Für jedes Teil wird ein eigener Actor
- * gestartet, der bei zusammengesetzten Bauteilen die Unterteile baut.
- */
-public class BuilderActor extends AbstractBehavior<Void> {
-
-    private final ComponentType type;
-    private int childrenRemaining;
-
-    /**
-     * Erzeugt den Behavior für einen BuilderActor.
-     *
-     * @param type Das Bauteil, das produziert werden soll.
-     * @return Die Behavior-Instanz des Actors.
-     */
-    public static Behavior<Void> create(ComponentType type) {
-        return Behaviors.setup(context -> {
-            // Wenn es sich um einen Basisbaustein handelt, wird direkt produziert und der Actor beendet sich.
-            if (type.isBasePart()) {
-                context.getLog().info("Bauteil {}: Produktionsstart.", type);
-                context.getLog().info("Bauteil {}: Fertiggestellt.", type);
-                return Behaviors.stopped();
-            }
-            // Ansonsten erstelle einen Composite-Builder-Actor.
-            return new BuilderActor(context, type);
-        });
+public class BuilderActor extends AbstractBehavior<BuilderActor.Command> {
+    public interface Command extends ComponentBuilder.Command {
     }
 
-    private BuilderActor(ActorContext<Void> context, ComponentType type) {
-        super(context);
-        this.type = type;
-        // Log: Produktionsstart des Bauteils
-        getContext().getLog().info("Bauteil {}: Produktionsstart.", type);
+    public record BuildComponent(
+            String componentName,
+            ActorRef<ComponentBuilder.Done> replyTo) implements Command {
+    }
 
-        // Komponenten dieses Bauteils ermitteln und jeweils einen neuen Actor starten.
-        ComponentType[] components = ComponentBuilder.getComponents(type);
-        // Anzahl der zu wartenden Kinder
-        this.childrenRemaining = components.length;
+    public record WrappedDone(ComponentBuilder.Done done) implements Command {
+    }
 
-        // Gemäß Vorgabe immer zwei Komponenten pro Bauteil
-        // Ersten Unterbauteil bauen (als eigener Actor)
-        if (components.length > 0) {
-            ActorRef<Void> child1 = context.spawnAnonymous(BuilderActor.create(components[0]));
-            // Überwache das Ende des Kind-Actors
-            context.watch(child1);
-        }
-        // Zweiten Unterbauteil bauen (als eigener Actor)
-        if (components.length > 1) {
-            ActorRef<Void> child2 = context.spawnAnonymous(BuilderActor.create(components[1]));
-            context.watch(child2);
-        }
+    private final Map<String, ActorRef<ComponentBuilder.Done>> pending = new HashMap<>();
+    private final ActorRef<ComponentBuilder.Done> doneAdapter;
+
+    public static Behavior<Command> create() {
+        return Behaviors.setup(ctx -> new BuilderActor(ctx));
+    }
+
+    private BuilderActor(ActorContext<Command> ctx) {
+        super(ctx);
+        this.doneAdapter = ctx.messageAdapter(ComponentBuilder.Done.class, WrappedDone::new);
     }
 
     @Override
-    public Receive<Void> createReceive() {
+    public Receive<Command> createReceive() {
         return newReceiveBuilder()
-                .onSignal(Terminated.class, signal -> {
-                    childrenRemaining--;
-                    if (childrenRemaining == 0) {
-                        getContext().getLog().info("Bauteil {}: Fertiggestellt.", type);
-                        return Behaviors.stopped();
-                    }
-                    return this;
-                })
+                .onMessage(BuildComponent.class, this::onBuildComponent)
+                .onMessage(WrappedDone.class, this::onDone)
                 .build();
     }
 
-}
+    private Behavior<Command> onBuildComponent(BuildComponent msg) {
+        String name = msg.componentName;
+        getContext().getLog().info("BuilderActor: building {}", name);
+        pending.put(name, msg.replyTo);
+        var builder = getContext().spawnAnonymous(ComponentBuilder.create(name));
+        builder.tell(new ComponentBuilder.Build(doneAdapter));
+        return this;
+    }
 
+    private Behavior<Command> onDone(WrappedDone msg) {
+        String name = msg.done.name();
+        getContext().getLog().info("BuilderActor: {} done", name);
+        var original = pending.remove(name);
+        if (original != null) {
+            original.tell(msg.done);
+        } else {
+            getContext().getLog().warn("No pending request for {}", name);
+        }
+        return this;
+    }
+}
