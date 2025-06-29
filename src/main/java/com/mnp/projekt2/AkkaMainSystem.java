@@ -1,33 +1,55 @@
 package com.mnp.projekt2;
 
 import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.*;
+import akka.actor.typed.javadsl.AbstractBehavior;
+import akka.actor.typed.javadsl.ActorContext;
+import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.Receive;
 
-public class AkkaMainSystem extends AbstractBehavior<AkkaMainSystem.Create> {
 
-    public static class Create {
+/**
+ * Akka-Hauptsystem, das die Produktion von elektronischen Bauteilen steuert.
+ * Startet die Produktion mit dem Bauteil EB5 als Wurzel.
+ */
+public class AkkaMainSystem extends AbstractBehavior<AkkaMainSystem.Message> {
+
+    /**
+     * Nachrichten für den AkkaMainSystem-Actor.
+     */
+    public interface Message { }
+
+    /**
+     * Nachricht zum Beenden des Systems.
+     */
+    public static class Terminate implements Message {
     }
 
-    public static Behavior<Create> create() {
+    /**
+     * Erzeugt die Behavior-Instanz von AkkaMainSystem.
+     */
+    public static Behavior<Message> create() {
         return Behaviors.setup(AkkaMainSystem::new);
     }
 
-    private AkkaMainSystem(ActorContext<Create> context) {
+    private AkkaMainSystem(ActorContext<Message> context) {
         super(context);
+        // Produktionsstart für EB5
+        getContext().getLog().info("Starte Produktion des Bauteils EB5.");
+        // Starte den Builder-Actor für EB5
+        context.spawnAnonymous(BuilderActor.create(ComponentType.EB5));
     }
 
     @Override
-    public Receive<Create> createReceive() {
-        return newReceiveBuilder().onMessage(Create.class, this::onCreate).build();
+    public Receive<Message> createReceive() {
+        return newReceiveBuilder()
+                .onMessage(Terminate.class, this::onTerminate)
+                .build();
     }
 
-    private Behavior<Create> onCreate(Create command) {
-        var addition = this.getContext().spawn(Add.create(), "Addition");
-        addition.tell(new Add.EvalAndWait("3", "5"));
-
-        var addition_check = this.getContext().spawn(Add.create(), "AdditionCheck");
-        addition_check.tell(new Add.EvalAndCheck("4", "6"));
-
-        return this;
+    private Behavior<Message> onTerminate(Terminate msg) {
+        getContext().getLog().info("System wird beendet.");
+        // System herunterfahren
+        getContext().getSystem().terminate();
+        return Behaviors.stopped();
     }
 }

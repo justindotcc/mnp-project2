@@ -2,19 +2,21 @@ package com.mnp.projekt2;
 
 import akka.actor.typed.ActorSystem;
 
-import java.io.IOException;
+/**
+ * Startet das Akka-System und initialisiert den AkkaMainSystem-Actor.
+ */
 public class AkkaStart {
   public static void main(String[] args) {
-    final ActorSystem<AkkaMainSystem.Create> messageMain = ActorSystem.create(AkkaMainSystem.create(), "akkaMainSystem");
+    // ActorSystem mit dem AkkaMainSystem-Actor erzeugen
+    ActorSystem<AkkaMainSystem.Message> system =
+            ActorSystem.create(AkkaMainSystem.create(), "akkaMainSystem");
 
-    messageMain.tell(new AkkaMainSystem.Create());
-
+    System.out.println(">>> Druecke ENTER zum Beenden <<<");
     try {
-      System.out.println(">>> Press ENTER to exit <<<");
       System.in.read();
-    } catch (IOException ignored) {
-    } finally {
-      messageMain.terminate();
+    } catch (Exception ignored) {
     }
+    // Nachricht senden, um das System zu beenden
+    system.tell(new AkkaMainSystem.Terminate());
   }
 }
