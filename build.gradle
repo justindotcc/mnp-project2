@@ -18,7 +18,7 @@ dependencies {
   testImplementation 'junit:junit:4.13.1'
 }
 
-mainClassName = "com.example.AkkaStart"
+mainClassName = "com.mnp.projekt2.AkkaStart"
 
 run {
   standardInput = System.in

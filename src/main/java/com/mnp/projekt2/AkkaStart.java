@@ -3,7 +3,7 @@ package com.mnp.projekt2;
 import akka.actor.typed.ActorSystem;
 
 /**
- * Startet das Akka-System und initialisiert den AkkaMainSystem-Actor.
+ * Starts the Akka Typed actor system.
  */
 public class AkkaStart {
   public static void main(String[] args) {
@@ -12,8 +12,8 @@ public class AkkaStart {
     System.out.println(">>> Druecke ENTER zum Beenden <<<");
     try {
       System.in.read();
-    } catch (Exception ignored) {
-    }
+    } catch (Exception ignored) {}
+
     system.terminate();
   }
 }
